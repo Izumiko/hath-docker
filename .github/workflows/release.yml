@@ -6,6 +6,40 @@ on:
     types: [published]
 jobs:
   build:
+    name: Native image on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: 'true'
+
+      - name: Build and run HelloWorld.java
+        run: |
+          curl -Lo hath.zip https://repo.e-hentai.org/hath/HentaiAtHome_1.6.4_src.zip
+          mkdir -p hath
+          unzip -q hath.zip -d ./hath
+          rm -rf ./hath/src/hath/gui
+          mkdir -p hath/build && cd hath/src
+          find . -type f -name "*.java" -exec printf "%s/%s\n" "$PWD" "{}" \; > ../build/srcfiles.txt
+          cd ..
+          javac -Xlint:deprecation,unchecked --release 25 -d ./build "@build/srcfiles.txt"
+          native-image -O2 --enable-http --enable-https -cp ./build hath.base.HentaiAtHomeClient HentaiAtHome --no-fallback
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: HentaiAtHome-${{ matrix.os }}
+          path: HentaiAtHome*
+
+  docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codebase
