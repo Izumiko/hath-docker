@@ -9,4 +9,4 @@ else if [ ! -f /hath/data/client_login ]; then
     fi
 fi
 
-exec java -jar HentaiAtHome.jar --cache-dir=/hath/cache --data-dir=/hath/data --download-dir=/hath/download --log-dir=/hath/log --temp-dir=/hath/temp
+exec /root/HentaiAtHome --cache-dir=/hath/cache --data-dir=/hath/data --download-dir=/hath/download --log-dir=/hath/log --temp-dir=/hath/temp
