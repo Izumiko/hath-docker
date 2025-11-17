@@ -21,17 +21,51 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
 
-      - name: Build and run HelloWorld.java
+      - name: Build
+        shell: pwsh
         run: |
-          curl -Lo hath.zip https://repo.e-hentai.org/hath/HentaiAtHome_1.6.4_src.zip
-          mkdir -p hath
-          unzip -q hath.zip -d ./hath
-          rm -rf ./hath/src/hath/gui
-          mkdir -p hath/build && cd hath/src
-          find . -type f -name "*.java" -exec printf "%s/%s\n" "$PWD" "{}" \; > ../build/srcfiles.txt
-          cd ..
-          javac -Xlint:deprecation,unchecked --release 25 -d ./build "@build/srcfiles.txt"
-          native-image -O2 --enable-http --enable-https -cp ./build hath.base.HentaiAtHomeClient HentaiAtHome --no-fallback
+          $zipUrl = "https://repo.e-hentai.org/hath/HentaiAtHome_1.6.4_src.zip"
+          $zipPath = "hath.zip"
+          $extractPath = "hath"
+          $sourcePath = Join-Path $extractPath "src"
+          $buildPath = Join-Path $extractPath "build"
+          $guiDir = Join-Path $sourcePath "hath/gui"
+          
+          Write-Host "Downloading source code..."
+          Invoke-RestMethod -Uri $zipUrl -OutFile $zipPath
+          
+          Write-Host "Creating directories..."
+          $null = New-Item -Path $extractPath -ItemType Directory -Force
+          $null = New-Item -Path $buildPath -ItemType Directory -Force
+          
+          Write-Host "Extracting archive..."
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+          
+          if (Test-Path $guiDir) {
+            Write-Host "Removing GUI directory..."
+            Remove-Item $guiDir -Recurse -Force
+          }
+          
+          Write-Host "Generating source file list..."
+          $srcFiles = Get-ChildItem -Path $sourcePath -Recurse -File |
+                      Where-Object { $_.Name -match '\.java$' } |
+                      ForEach-Object { $_.FullName }
+          $srcFiles | Set-Content -Path (Join-Path $buildPath "srcfiles.txt") -Encoding UTF8
+          
+          Write-Host "Compiling Java sources..."
+          javac -Xlint:deprecation,unchecked --release 25 -d $buildPath "@$buildPath/srcfiles.txt"
+          
+          Write-Host "Building native image..."
+          $nativeImageArgs = @(
+            "-O2",
+            "--enable-http",
+            "--enable-https",
+            "-cp", $buildPath,
+            "hath.base.HentaiAtHomeClient",
+            "HentaiAtHome",
+            "--no-fallback"
+          )
+          & native-image @nativeImageArgs
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
