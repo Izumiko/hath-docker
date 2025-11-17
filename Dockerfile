@@ -11,7 +11,6 @@ RUN $JAVA_HOME/bin/jlink \
 ARG HATH_SRC=https://repo.e-hentai.org/hath/HentaiAtHome_1.6.4_src.zip
 
 WORKDIR /root
-COPY ${HATH_SRC} hath.zip
 COPY start.sh start.sh
 
 RUN apk update && apk add --no-cache unzip wget && \
