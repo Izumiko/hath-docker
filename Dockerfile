@@ -1,7 +1,7 @@
 FROM eclipse-temurin:25-jdk-alpine AS jre-builder
 
 RUN $JAVA_HOME/bin/jlink \
-      --add-modules java.base,java.logging,java.naming,java.net.http,jdk.naming.dns \
+      --add-modules java.base,java.net.http,jdk.crypto.ec \
       --strip-debug \
       --no-header-files \
       --no-man-pages \
