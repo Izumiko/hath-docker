@@ -12,12 +12,16 @@ ARG HATH_SRC=https://repo.e-hentai.org/hath/HentaiAtHome_1.6.4_src.zip
 
 WORKDIR /root
 COPY start.sh start.sh
+COPY patches patches
+COPY apply_patches.sh apply_patches.sh
 
-RUN apk update && apk add --no-cache unzip wget && \
+RUN apk update && apk add --no-cache unzip wget patch && \
     wget ${HATH_SRC}  -O hath.zip && \
     mkdir -p hath && \
     unzip -q hath.zip -d ./hath && \
-    cd ./hath && mkdir -p build && \
+    sh apply_patches.sh
+
+RUN cd ./hath && mkdir -p build && \
     cd src && find . -type f -name "*.java" -exec printf "%s/%s\n" "$PWD" "{}" \; > ../build/srcfiles.txt && \
     cd .. && javac -Xlint:deprecation,unchecked --release 25 -d ./build "@build/srcfiles.txt" && \
     cd build && jar cvfm HentaiAtHome.jar ../src/hath/base/HentaiAtHome.manifest hath/base && \

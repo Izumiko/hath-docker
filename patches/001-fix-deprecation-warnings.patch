@@ -1,0 +1,89 @@
+diff -ruN HentaiAtHome_1.6.4_src_origin/src/hath/base/CacheHandler.java HentaiAtHome_1.6.4_src/src/hath/base/CacheHandler.java
+--- HentaiAtHome_1.6.4_src_origin/src/hath/base/CacheHandler.java	2024-11-30 20:19:28.000000000 +0800
++++ HentaiAtHome_1.6.4_src/src/hath/base/CacheHandler.java	2025-11-23 23:17:57.102732800 +0800
+@@ -153,6 +153,7 @@
+ 		return new File(Settings.getDataDir(), "pcache_ages");
+ 	}
+ 
++	@SuppressWarnings("unchecked")
+ 	private boolean loadPersistentData() {
+ 		if(!getPersistentInfoFile().exists()) {
+ 			Out.debug("CacheHandler: Missing pcache_info, forcing rescan");
+diff -ruN HentaiAtHome_1.6.4_src_origin/src/hath/base/GalleryDownloader.java HentaiAtHome_1.6.4_src/src/hath/base/GalleryDownloader.java
+--- HentaiAtHome_1.6.4_src_origin/src/hath/base/GalleryDownloader.java	2024-05-11 00:19:04.000000000 +0800
++++ HentaiAtHome_1.6.4_src/src/hath/base/GalleryDownloader.java	2025-11-23 22:12:34.434096700 +0800
+@@ -159,9 +159,10 @@
+ 		URL metaurl;
+ 		
+ 		try {
+-			metaurl = new URL(Settings.CLIENT_RPC_PROTOCOL + Settings.getRPCServerHost() + "/15/dl?" + ServerHandler.getURLQueryString("fetchqueue", markDownloaded ? gid + ";" + minxres : ""));
++			String urlString = Settings.CLIENT_RPC_PROTOCOL + Settings.getRPCServerHost() + "/15/dl?" + ServerHandler.getURLQueryString("fetchqueue", markDownloaded ? gid + ";" + minxres : "");
++			metaurl = new java.net.URI(urlString).toURL();
+ 		}
+-		catch(java.net.MalformedURLException e) {
++		catch(java.net.MalformedURLException | java.net.URISyntaxException e) {
+ 			e.printStackTrace();
+ 			return false;
+ 		}
+diff -ruN HentaiAtHome_1.6.4_src_origin/src/hath/base/HTTPResponse.java HentaiAtHome_1.6.4_src/src/hath/base/HTTPResponse.java
+--- HentaiAtHome_1.6.4_src_origin/src/hath/base/HTTPResponse.java	2024-06-04 04:38:24.000000000 +0800
++++ HentaiAtHome_1.6.4_src/src/hath/base/HTTPResponse.java	2025-11-23 22:15:18.126733900 +0800
+@@ -100,7 +100,9 @@
+ 			List<FileDownloader> testfiles = Collections.checkedList(new ArrayList<FileDownloader>(), FileDownloader.class);
+ 
+ 			for(int i=0; i<testcount; i++) {
+-				URL source = new URL(protocol == null ? "http" : protocol, hostname, port, "/t/" + testsize + "/" + testtime + "/" + testkey + "/" + (int) Math.floor(Math.random() * Integer.MAX_VALUE));
++				String path = "/t/" + testsize + "/" + testtime + "/" + testkey + "/" + (int) Math.floor(Math.random() * Integer.MAX_VALUE);
++				java.net.URI uri = new java.net.URI(protocol == null ? "http" : protocol, null, hostname, port, path, null, null);
++				URL source = uri.toURL();
+ 				//Out.debug("Test thread: " + source);
+ 				FileDownloader dler = new FileDownloader(source, 10000, 60000, true);
+ 				testfiles.add(dler);
+@@ -116,7 +118,7 @@
+ 				}
+ 			}
+ 		}
+-		catch(java.net.MalformedURLException e) {
++		catch(java.net.MalformedURLException | java.net.URISyntaxException e) {
+ 			HentaiAtHomeClient.dieWithError(e);
+ 		}
+ 
+diff -ruN HentaiAtHome_1.6.4_src_origin/src/hath/base/ServerHandler.java HentaiAtHome_1.6.4_src/src/hath/base/ServerHandler.java
+--- HentaiAtHome_1.6.4_src_origin/src/hath/base/ServerHandler.java	2024-05-11 00:19:06.000000000 +0800
++++ HentaiAtHome_1.6.4_src/src/hath/base/ServerHandler.java	2025-11-23 22:11:26.924275800 +0800
+@@ -63,12 +63,14 @@
+ 
+ 		try {
+ 			if(act.equals(ACT_SERVER_STAT)) {
+-				serverConnectionURL = new URL(Settings.CLIENT_RPC_PROTOCOL + Settings.getRPCServerHost() + "/" + Settings.getRPCPath() + "clientbuild=" + Settings.CLIENT_BUILD + "&act=" + act);
++				String urlString = Settings.CLIENT_RPC_PROTOCOL + Settings.getRPCServerHost() + "/" + Settings.getRPCPath() + "clientbuild=" + Settings.CLIENT_BUILD + "&act=" + act;
++				serverConnectionURL = new java.net.URI(urlString).toURL();
+ 			}
+ 			else {
+-				serverConnectionURL = new URL(Settings.CLIENT_RPC_PROTOCOL + Settings.getRPCServerHost() + "/" + Settings.getRPCPath() + getURLQueryString(act, add));
++				String urlString = Settings.CLIENT_RPC_PROTOCOL + Settings.getRPCServerHost() + "/" + Settings.getRPCPath() + getURLQueryString(act, add);
++				serverConnectionURL = new java.net.URI(urlString).toURL();
+ 			}
+-		} catch(java.net.MalformedURLException e) {
++		} catch(java.net.MalformedURLException | java.net.URISyntaxException e) {
+ 			HentaiAtHomeClient.dieWithError(e);
+ 		}
+ 
+@@ -299,7 +301,7 @@
+ 
+ 				for(String s : response) {
+ 					if(!s.equals("")) {
+-						urls.add(new URL(s));
++						urls.add(new java.net.URI(s).toURL());
+ 					}
+ 				}
+ 				
+@@ -323,7 +325,7 @@
+ 			String[] response = sr.getResponseText();
+ 
+ 			try {
+-				return new URL(response[0]);
++				return new java.net.URI(response[0]).toURL();
+ 			} catch(Exception e) {}
+ 		}
+ 
