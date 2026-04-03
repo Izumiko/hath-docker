@@ -8,7 +8,7 @@ RUN $JAVA_HOME/bin/jlink \
       --compress=zip-6 \
       --output /custom-jre
 
-ARG HATH_SRC=https://repo.e-hentai.org/hath/HentaiAtHome_1.6.4_src.zip
+ARG HATH_SRC=https://repo.e-hentai.org/hath/HentaiAtHome_1.6.5_src.zip
 
 WORKDIR /root
 COPY start.sh start.sh
